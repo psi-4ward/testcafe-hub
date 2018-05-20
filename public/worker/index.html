@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TestCafe remote node</title>
+</head>
+<body>
+<h1>TestCafe::RemoteNode</h1>
+
+<pre id="log">
+
+</pre>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var log = document.getElementById('log');
+  var socket = io.connect('/nodes');
+  socket.on('connect', function() {
+    log.innerText += "Connected to hub, waiting for jobs...\n";
+  });
+  socket.on('reconnect', function() {
+    log.innerText += "Rreconnected\n";
+  });
+  socket.on('connect_error', function(err) {
+    log.innerText += "ConnectError:" + err.message + "\n";
+  });
+  socket.on('error', function(err) {
+    log.innerText += "Error:" + err.message + "\n";
+  });
+
+  var openWindows = {};
+  socket.on('open-browser', function(data, cb) {
+    var id = data.id;
+    var url = data.url;
+    log.innerText += "Testrun " + id + ': ' + url + "\n";
+    openWindows[id] = window.open(url);
+
+    if(!openWindows[id] || !openWindows[id].close) {
+      cb('Could not open new browser tab for testrun');
+    } else {
+      cb(true);
+    }
+  });
+  socket.on('close-browser', function(data, cb) {
+    var id = data.id;
+    log.innerText += "Completed: " + id + "\n";
+    openWindows[id].close();
+    delete openWindows[id];
+    cb(true);
+  });
+
+
+  // TODO: test if popups are allowed, if not display message
+  // var testWin = window.open('about:blank');
+  // testWin.close();
+</script>
+</body>
+</html>

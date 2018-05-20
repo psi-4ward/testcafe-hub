@@ -1,36 +1,31 @@
-const app = require('express')();
+const express = require('express');
+const app = express();
 const server = require('http').Server(app);
-const io = require('socket.io')(server);
 const bodyParser = require('body-parser');
+const getMyHostname = require('endpoint-utils').getMyHostname;
 const PORT = process.env.PORT || 8080;
 
+const socketio = require('./src/socketio');
+const api = require('./src/api');
+
 app.use(bodyParser.json());
+app.use(express.static('public'));
 
-app.get('/', function(req, res) {
-  res.sendFile(__dirname + '/static/index.html');
+// Enable /api endpoint
+app.use('/api', api());
+
+// Add socket.io integration
+socketio(server);
+
+// 404 handler
+app.use(function(req, res) {
+  res.status(404).send('Not found');
 });
 
-app.get('/api/remoteCount', function(req, res) {
-  res.send(Object.keys(io.sockets.connected).length.toString());
-});
-
-app.post('/api/run', function(req, res) {
-  const {url} = req.body;
-  io.emit('run', {url});
-  console.log(`Emitted run for ${url}`);
-  res.send('OK');
-});
-
-app.post('/api/completed', function(req, res) {
-  const {url} = req.body;
-  io.emit('completed', {url});
-  console.log(`Emitted completed for ${url}`);
-  res.send('OK');
-});
-
-io.on('connect', socket => console.log('Client connected'));
-io.on('disconnect', socket => console.log('Client disconnected'));
-
-server.listen(PORT, () => {
-  console.log(`TestCafe-Hub running on port ${PORT}`);
-});
+// Bootstrap TestCafe Hub
+(async function() {
+  const host = await getMyHostname();
+  server.listen(PORT, () => {
+    console.log(`TestCafe-Hub running on http://${host}:${PORT}`);
+  });
+})();

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TestCafe::Hub</title>
+</head>
+<body>
+<h1>TestCafe::Hub</h1>
+
+<h3>RemoteNode URL</h3>
+<pre><script>
+  const nodeUrl = document.location.href + 'worker';
+  document.write('<a href="'+ nodeUrl+'">'+ nodeUrl+'</a>');
+</script></pre>
+<hr>
+<h3>Nodes</h3>
+<pre id="nodes"></pre>
+<hr>
+<h3>Hub</h3>
+<pre id="hub"></pre>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  var hub = document.getElementById('hub');
+  var nodes = document.getElementById('nodes');
+
+  var socket = io.connect('/hub');
+  socket.on('connect', function() {
+    hub.innerText = "Connected\n";
+  });
+  socket.on('reconnect', function() {
+    hub.innerText = "Rreconnected\n";
+  });
+  socket.on('connect_error', function(err) {
+    hub.innerText = "ConnectError:" + err.message + "\n";
+  });
+  socket.on('error', function(err) {
+    hub.innerText = "Error:" + err.message + "\n";
+  });
+
+  socket.on('nodes', function(data) {
+    console.log(data);
+    
+    nodes.innerText = JSON.stringify(data, null, 2);
+  });
+</script>
+</body>
+</html>
